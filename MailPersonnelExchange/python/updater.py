@@ -29,6 +29,7 @@ def is_newer(latest: str, current: str) -> bool:
 
 class UpdateCheckerSignals(QObject):
     found = pyqtSignal(str, str)   # (new_version, download_url)
+    debug = pyqtSignal(str)        # message de diagnostic
 
 
 class UpdateDownloaderSignals(QObject):
@@ -55,15 +56,24 @@ class UpdateChecker(QRunnable):
                 data = json.loads(r.read().decode())
 
             tag = data.get("tag_name", "")
+            self.signals.debug.emit(f"[Updater] Dernière release GitHub : {tag or '(aucune)'}")
+
+            if not tag:
+                self.signals.debug.emit("[Updater] Aucune release publiée sur GitHub.")
+                return
             if not is_newer(tag, self._version):
+                self.signals.debug.emit(f"[Updater] Déjà à jour ({self._version} >= {tag}).")
                 return
 
+            asset_names = [a["name"] for a in data.get("assets", [])]
+            self.signals.debug.emit(f"[Updater] Assets : {asset_names or '(aucun)'}")
             for asset in data.get("assets", []):
                 if asset["name"].lower().endswith(".exe"):
                     self.signals.found.emit(tag.lstrip("v"), asset["browser_download_url"])
                     return
-        except Exception:
-            pass  # Erreur réseau silencieuse — ne pas déranger l'utilisateur
+            self.signals.debug.emit("[Updater] Aucun .exe trouvé dans les assets de la release.")
+        except Exception as exc:
+            self.signals.debug.emit(f"[Updater] Erreur : {exc}")
 
 
 class UpdateDownloader(QRunnable):

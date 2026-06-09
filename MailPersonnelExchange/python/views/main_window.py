@@ -281,6 +281,7 @@ class MainWindow(QMainWindow):
     def _start_update_check(self) -> None:
         checker = UpdateChecker(APP_VERSION)
         checker.signals.found.connect(self._on_update_found)
+        checker.signals.debug.connect(self._set_status)
         QThreadPool.globalInstance().start(checker)
 
     @pyqtSlot(str, str)

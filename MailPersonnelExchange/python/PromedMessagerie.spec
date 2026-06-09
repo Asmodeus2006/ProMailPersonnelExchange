@@ -57,7 +57,7 @@ a = Analysis(
 
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 
-_icon = "ressources\\icone_msg.ico" if Path("ressources\\icone_msg.ico").exists() else None
+_icon = "ressources\\logo_promed.ico" if Path("ressources\\logo_promed.ico").exists() else None
 
 exe = EXE(
     pyz,
