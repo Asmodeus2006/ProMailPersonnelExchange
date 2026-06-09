@@ -1,0 +1,45 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v8.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v8.0": {
+      "MailPersonnelExchange/1.0.0": {
+        "dependencies": {
+          "Microsoft.Exchange.WebServices": "2.2.0"
+        },
+        "runtime": {
+          "MailPersonnelExchange.dll": {}
+        }
+      },
+      "Microsoft.Exchange.WebServices/2.2.0": {
+        "runtime": {
+          "lib/40/Microsoft.Exchange.WebServices.Auth.dll": {
+            "assemblyVersion": "15.0.0.0",
+            "fileVersion": "15.0.913.0"
+          },
+          "lib/40/Microsoft.Exchange.WebServices.dll": {
+            "assemblyVersion": "15.0.0.0",
+            "fileVersion": "15.0.913.15"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "MailPersonnelExchange/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Microsoft.Exchange.WebServices/2.2.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-NlkaTD0uWtg9VbiWq0VDWMBPzHFknH3tmstrxt0acrT09LBGqATTjRpsGOODz6tUdX7/dehBinxsf75U5Uw/+A==",
+      "path": "microsoft.exchange.webservices/2.2.0",
+      "hashPath": "microsoft.exchange.webservices.2.2.0.nupkg.sha512"
+    }
+  }
+}
