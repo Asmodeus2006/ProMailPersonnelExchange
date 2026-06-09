@@ -42,6 +42,8 @@ from qt_material import apply_stylesheet
 
 from models.mail_item import MailItem
 from services.ews_service import EwsService
+from updater import UpdateChecker, UpdateDownloader, run_installer_and_quit
+from version import APP_VERSION
 from views.compose_window import ComposeWindow
 from views.mail_delegate import MailDelegate
 
@@ -229,6 +231,87 @@ class MainWindow(QMainWindow):
         self._set_action_buttons(False)
 
         self._start_load_folder()
+        self._start_update_check()
+
+    # ------------------------------------------------------------------
+    # Mise à jour automatique
+    # ------------------------------------------------------------------
+
+    def _build_update_banner(self) -> QWidget:
+        self._update_banner = QFrame()
+        self._update_banner.setObjectName("updateBanner")
+        self._update_banner.setFixedHeight(40)
+        self._update_banner.setStyleSheet(
+            "QFrame#updateBanner{background:#fef3c7;border-bottom:1px solid #f59e0b;}"
+        )
+        hl = QHBoxLayout(self._update_banner)
+        hl.setContentsMargins(16, 0, 16, 0)
+        hl.setSpacing(12)
+
+        self._lbl_update = QLabel()
+        self._lbl_update.setStyleSheet("color:#92400e; font-weight:bold; background:transparent;")
+        hl.addWidget(self._lbl_update)
+
+        self._update_dl_bar = QProgressBar()
+        self._update_dl_bar.setFixedWidth(160)
+        self._update_dl_bar.setFixedHeight(14)
+        self._update_dl_bar.setTextVisible(False)
+        self._update_dl_bar.setStyleSheet(
+            "QProgressBar{background:#fde68a;border-radius:7px;border:none;}"
+            "QProgressBar::chunk{background:#f59e0b;border-radius:7px;}"
+        )
+        self._update_dl_bar.hide()
+        hl.addWidget(self._update_dl_bar)
+
+        hl.addStretch()
+
+        self._btn_do_update = QPushButton("⬇  Mettre à jour")
+        self._btn_do_update.setFixedHeight(28)
+        self._btn_do_update.setStyleSheet(
+            "QPushButton{background:#f59e0b;color:#fff;border:none;"
+            "border-radius:5px;padding:0 14px;font-weight:bold;text-transform:none;}"
+            "QPushButton:hover{background:#d97706;}"
+            "QPushButton:disabled{background:#fcd34d;color:#fff;}"
+        )
+        hl.addWidget(self._btn_do_update)
+
+        self._update_banner.hide()
+        return self._update_banner
+
+    def _start_update_check(self) -> None:
+        checker = UpdateChecker(APP_VERSION)
+        checker.signals.found.connect(self._on_update_found)
+        QThreadPool.globalInstance().start(checker)
+
+    @pyqtSlot(str, str)
+    def _on_update_found(self, version: str, url: str) -> None:
+        self._lbl_update.setText(f"✨  Mise à jour disponible — v{version}")
+        self._btn_do_update.clicked.connect(lambda: self._download_update(url))
+        self._update_banner.show()
+
+    def _download_update(self, url: str) -> None:
+        self._btn_do_update.setEnabled(False)
+        self._btn_do_update.setText("Téléchargement...")
+        self._update_dl_bar.setMaximum(100)
+        self._update_dl_bar.setValue(0)
+        self._update_dl_bar.show()
+
+        dl = UpdateDownloader(url)
+        dl.signals.progress.connect(self._update_dl_bar.setValue)
+        dl.signals.done.connect(self._on_update_ready)
+        dl.signals.error.connect(self._on_update_error)
+        QThreadPool.globalInstance().start(dl)
+
+    @pyqtSlot(str)
+    def _on_update_ready(self, path: str) -> None:
+        self._btn_do_update.setText("Installation en cours…")
+        run_installer_and_quit(path, QApplication.instance().quit)
+
+    @pyqtSlot(str)
+    def _on_update_error(self, msg: str) -> None:
+        self._btn_do_update.setEnabled(True)
+        self._btn_do_update.setText("⬇  Réessayer")
+        self._lbl_update.setText("Erreur de téléchargement — vérifiez votre connexion")
 
     # ------------------------------------------------------------------
     # Header
@@ -344,6 +427,9 @@ class MainWindow(QMainWindow):
         )
         self._progress.hide()
         root.addWidget(self._progress)
+
+        # Bannière de mise à jour (cachée par défaut)
+        root.addWidget(self._build_update_banner())
 
         # Content = folder sidebar + splitter
         content = QWidget()
