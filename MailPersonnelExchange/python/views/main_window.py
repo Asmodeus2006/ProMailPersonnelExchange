@@ -353,6 +353,12 @@ class MainWindow(QMainWindow):
         lbl_title.setStyleSheet("color:#ffffff; background:transparent; padding-left:4px;")
         hl.addWidget(lbl_title)
 
+        lbl_version = QLabel(f"v{APP_VERSION}")
+        lbl_version.setStyleSheet(
+            "color:rgba(255,255,255,0.55); font-size:11px; background:transparent; padding-left:4px;"
+        )
+        hl.addWidget(lbl_version)
+
         hl.addStretch()
 
         self._lbl_conn = QLabel(
