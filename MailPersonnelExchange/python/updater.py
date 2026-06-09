@@ -94,7 +94,7 @@ class UpdateDownloader(QRunnable):
 
 
 # ---------------------------------------------------------------------------
-# Lancement de l'installateur
+# Lancement de l'installateur (tests)
 # ---------------------------------------------------------------------------
 
 def run_installer_and_quit(installer_path: str, quit_fn) -> None:
@@ -104,3 +104,4 @@ def run_installer_and_quit(installer_path: str, quit_fn) -> None:
         creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP,
     )
     quit_fn()
+
