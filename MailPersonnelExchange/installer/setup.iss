@@ -9,7 +9,7 @@
 ;   4. Publier PromedMessagerie_Setup.exe sur GitHub Releases avec le tag vX.Y.Z
 
 #define AppName      "Promed Messagerie"
-#define AppVersion   "2.0.0"
+#define AppVersion   "3.0.0"
 #define AppPublisher "Promed"
 #define AppExe       "PromedMessagerie.exe"
 #define SourceDir    "..\python\dist\PromedMessagerie"

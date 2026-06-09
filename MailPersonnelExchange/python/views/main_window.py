@@ -761,6 +761,9 @@ class MainWindow(QMainWindow):
         self.setStatusBar(sb)
         self._lbl_status = QLabel("Chargement de la boite de réception…")
         sb.addWidget(self._lbl_status)
+        lbl_author = QLabel("App créée par Asmodeus")
+        lbl_author.setStyleSheet("color:#94a3b8; font-size:10px; padding:0 8px; background:transparent;")
+        sb.addPermanentWidget(lbl_author)
 
     # ------------------------------------------------------------------
     # Wire events + shortcuts
