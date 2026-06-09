@@ -543,7 +543,8 @@ class LoginWindow(QMainWindow):
         top_bar.setFixedHeight(52)
         top_bar.setStyleSheet("background: transparent;")
         tb_layout = QHBoxLayout(top_bar)
-        tb_layout.setContentsMargins(40, 0, 20, 0)
+        tb_layout.setContentsMargins(40, 9, 20, 9)
+        tb_layout.setAlignment(Qt.AlignmentFlag.AlignVCenter)
         tb_layout.addStretch()
 
         btn_cfg = QPushButton("⚙")

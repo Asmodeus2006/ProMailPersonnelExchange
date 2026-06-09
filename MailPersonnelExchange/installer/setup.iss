@@ -9,7 +9,7 @@
 ;   4. Publier PromedMessagerie_Setup.exe sur GitHub Releases avec le tag vX.Y.Z
 
 #define AppName      "Promed Messagerie"
-#define AppVersion   "5.0.0"
+#define AppVersion   "6.0.0"
 #define AppPublisher "Promed"
 #define AppExe       "PromedMessagerie.exe"
 #define SourceDir    "..\python\dist\PromedMessagerie"
@@ -32,7 +32,7 @@ AllowNoIcons=yes
 ; Ferme l'application si elle tourne lors d'une mise à jour silencieuse
 CloseApplications=yes
 RestartApplications=no
-#define IconPath "..\python\ressources\icone_msg.ico"
+#define IconPath "..\python\ressources\ICO_MSGPROD.ico"
 #if FileExists(IconPath)
 SetupIconFile={#IconPath}
 #endif
@@ -43,7 +43,7 @@ SolidCompression=yes
 WizardStyle=modern
 WizardSizePercent=120
 MinVersion=10.0
-UninstallDisplayIcon={app}\icone_msg.ico
+UninstallDisplayIcon={app}\ICO_MSGPROD.ico
 
 [Languages]
 Name: "french"; MessagesFile: "compiler:Languages\French.isl"
@@ -55,14 +55,14 @@ Name: "desktopicon"; Description: "Créer un raccourci sur le Bureau"; GroupDesc
 ; Copy the entire PyInstaller one-folder output
 Source: "{#SourceDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; Application icon
-Source: "..\python\ressources\icone_msg.ico"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\python\ressources\ICO_MSGPROD.ico"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 ; Start Menu
-Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExe}"; WorkingDir: "{app}"; IconFilename: "{app}\icone_msg.ico"
+Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExe}"; WorkingDir: "{app}"; IconFilename: "{app}\ICO_MSGPROD.ico"
 Name: "{group}\Désinstaller {#AppName}"; Filename: "{uninstallexe}"
 ; Desktop (optional, controlled by task above)
-Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExe}"; WorkingDir: "{app}"; IconFilename: "{app}\icone_msg.ico"; Tasks: desktopicon
+Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExe}"; WorkingDir: "{app}"; IconFilename: "{app}\ICO_MSGPROD.ico"; Tasks: desktopicon
 
 [Run]
 Filename: "{app}\{#AppExe}"; Description: "Lancer {#AppName}"; Flags: nowait postinstall skipifsilent
