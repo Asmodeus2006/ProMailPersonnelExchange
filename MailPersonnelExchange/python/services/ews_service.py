@@ -320,7 +320,7 @@ class EwsService:
                                 attachment_paths: list[str] | None) -> None:
         paths = [p for p in (attachment_paths or []) if Path(p).exists()]
         if paths:
-            msg.save()  # Save as draft first so we can attach
+            msg.save(folder=self._account.drafts)  # Save as draft first so we can attach
             for p in paths:
                 fp = Path(p)
                 msg.attach(FileAttachment(name=fp.name, content=fp.read_bytes()))
