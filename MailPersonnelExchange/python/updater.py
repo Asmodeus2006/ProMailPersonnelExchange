@@ -9,7 +9,7 @@ from pathlib import Path
 from PyQt6.QtCore import QObject, QRunnable, pyqtSignal
 
 # ← Remplacer par "username/nom-du-repo" après création du dépôt GitHub
-GITHUB_REPO = "VOTRE_USERNAME/promed-messagerie"
+GITHUB_REPO = "Asmodeus2006/ProMailPersonnelExchange"
 
 
 def _parse_ver(v: str) -> tuple[int, ...]:
