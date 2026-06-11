@@ -65,8 +65,8 @@ class _ContactPopup(QListWidget):
 
     picked = pyqtSignal(str, str)  # display_name, email
 
-    def __init__(self) -> None:
-        super().__init__(None)
+    def __init__(self, parent=None) -> None:
+        super().__init__(parent)
         self.setWindowFlags(
             Qt.WindowType.Tool
             | Qt.WindowType.FramelessWindowHint
@@ -83,6 +83,15 @@ class _ContactPopup(QListWidget):
             "QListWidget::item:hover{background:#f5f9ff;}"
         )
         self.itemClicked.connect(self._on_click)
+        self.viewport().installEventFilter(self)
+
+    def eventFilter(self, obj, event) -> bool:
+        if obj is self.viewport() and event.type() == QEvent.Type.MouseButtonPress:
+            item = self.itemAt(event.pos())
+            if item:
+                self._on_click(item)
+                return True
+        return super().eventFilter(obj, event)
 
     def _on_click(self, item: QListWidgetItem) -> None:
         name  = item.data(Qt.ItemDataRole.UserRole)
@@ -177,7 +186,7 @@ class ComposeWindow(QDialog):
         self._send_had_error = False
         self._attach_paths: list[str] = []
         self._active_field: QLineEdit | None = None
-        self._popup = _ContactPopup()
+        self._popup = _ContactPopup(parent=self)
         self._popup.picked.connect(self._pick_suggestion)
 
         self.setWindowTitle(_TITLES.get(mode, "Mail"))

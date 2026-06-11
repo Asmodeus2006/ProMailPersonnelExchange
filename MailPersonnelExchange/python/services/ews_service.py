@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from datetime import datetime
 from pathlib import Path
 
@@ -19,7 +20,16 @@ from models.mail_item import MailItem
 
 
 def _mailboxes(addresses: str) -> list[Mailbox]:
-    return [Mailbox(email_address=a.strip()) for a in addresses.split(",") if a.strip()]
+    result = []
+    for a in addresses.split(","):
+        a = a.strip()
+        if not a:
+            continue
+        m = re.match(r'^(.*?)\s*<([^>]+)>\s*$', a)
+        email = m.group(2).strip() if m else a
+        if email:
+            result.append(Mailbox(email_address=email))
+    return result
 
 
 class EwsService:
@@ -127,7 +137,10 @@ class EwsService:
             except Exception:
                 folder = self._account.inbox
 
-        return self._load_items(folder, max_items)
+        try:
+            return self._load_items(folder, max_items)
+        except Exception:
+            return []
 
     def _load_items(self, folder, max_items: int) -> list[MailItem]:
         raw = list(
