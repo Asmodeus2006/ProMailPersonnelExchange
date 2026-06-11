@@ -437,7 +437,7 @@ class PasswordDialog(QDialog):
 # ---------------------------------------------------------------------------
 
 class LoginWindow(QMainWindow):
-    authenticated = pyqtSignal(object, str)
+    authenticated = pyqtSignal(object, str, object)  # ews, email, ad_users
 
     def __init__(self) -> None:
         super().__init__()
@@ -792,7 +792,7 @@ class LoginWindow(QMainWindow):
         dlg = PasswordDialog(user, self._ews, self._cfg, parent=self)
         if dlg.exec() == QDialog.DialogCode.Accepted:
             self._save_recent_user(user)
-            self.authenticated.emit(self._ews, user.email)
+            self.authenticated.emit(self._ews, user.email, self._users)
 
     def closeEvent(self, event) -> None:
         QApplication.quit()

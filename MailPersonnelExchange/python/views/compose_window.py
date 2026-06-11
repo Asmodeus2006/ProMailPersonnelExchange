@@ -4,7 +4,7 @@ import json
 import re
 from pathlib import Path
 
-from PyQt6.QtCore import Qt, QObject, QRunnable, QThreadPool, pyqtSignal, pyqtSlot
+from PyQt6.QtCore import QEvent, QPoint, Qt, QObject, QRunnable, QThreadPool, pyqtSignal, pyqtSlot
 from PyQt6.QtWidgets import (
     QDialog,
     QFileDialog,
@@ -12,6 +12,8 @@ from PyQt6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
+    QListWidget,
+    QListWidgetItem,
     QMessageBox,
     QProgressBar,
     QPushButton,
@@ -21,6 +23,7 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
+from models.ad_user import ADUser
 from models.mail_item import MailItem
 from services.ews_service import EwsService
 
@@ -51,6 +54,65 @@ def _strip_html(html: str) -> str:
                .replace("&lt;", "<").replace("&gt;", ">").replace("&quot;", '"')
     html = re.sub(r"\n{3,}", "\n\n", html)
     return html.strip()
+
+
+# ---------------------------------------------------------------------------
+# Autocomplete popup
+# ---------------------------------------------------------------------------
+
+class _ContactPopup(QListWidget):
+    """Floating suggestion list that appears below a recipient QLineEdit."""
+
+    picked = pyqtSignal(str, str)  # display_name, email
+
+    def __init__(self) -> None:
+        super().__init__(None, Qt.WindowType.Tool | Qt.WindowType.FramelessWindowHint)
+        self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
+        self.setWindowFlag(Qt.WindowType.WindowStaysOnTopHint)
+        self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.setStyleSheet(
+            "QListWidget{"
+            "background:#fff;border:1px solid #90caf9;"
+            "border-radius:6px;font-size:13px;outline:none;}"
+            "QListWidget::item{padding:7px 14px;border-bottom:1px solid #f0f4ff;}"
+            "QListWidget::item:selected{background:#e3f0ff;color:#1565c0;}"
+            "QListWidget::item:hover{background:#f5f9ff;}"
+        )
+        self.itemClicked.connect(self._on_click)
+
+    def _on_click(self, item: QListWidgetItem) -> None:
+        name  = item.data(Qt.ItemDataRole.UserRole)
+        email = item.data(Qt.ItemDataRole.UserRole + 1)
+        self.picked.emit(name, email)
+        self.hide()
+
+    def show_for(self, users: list[ADUser], anchor: QLineEdit) -> None:
+        self.clear()
+        for u in users[:8]:
+            item = QListWidgetItem(f"{u.display_name}   {u.email}")
+            item.setData(Qt.ItemDataRole.UserRole,     u.display_name)
+            item.setData(Qt.ItemDataRole.UserRole + 1, u.email)
+            self.addItem(item)
+        self.setCurrentRow(0)
+        self.setFixedWidth(max(anchor.width(), 360))
+        row_h = self.sizeHintForRow(0) if self.count() else 34
+        self.setFixedHeight(min(self.count(), 8) * (row_h + 1) + 6)
+        pos = anchor.mapToGlobal(QPoint(0, anchor.height() + 2))
+        self.move(pos)
+        self.show()
+
+    def select_next(self) -> None:
+        self.setCurrentRow(min(self.currentRow() + 1, self.count() - 1))
+
+    def select_prev(self) -> None:
+        self.setCurrentRow(max(self.currentRow() - 1, 0))
+
+    def accept_current(self) -> bool:
+        item = self.currentItem()
+        if item:
+            self._on_click(item)
+            return True
+        return False
 
 
 # ---------------------------------------------------------------------------
@@ -99,15 +161,20 @@ class ComposeWindow(QDialog):
         ews: EwsService,
         mode: str = "new",
         mail: MailItem | None = None,
+        contacts: list[ADUser] | None = None,
         parent=None,
     ) -> None:
         super().__init__(parent)
-        self._ews   = ews
-        self._mode  = mode
-        self._mail  = mail
+        self._ews      = ews
+        self._mode     = mode
+        self._mail     = mail
+        self._contacts: list[ADUser] = contacts or []
         self._workers: list[_SendWorker] = []
         self._send_had_error = False
         self._attach_paths: list[str] = []
+        self._active_field: QLineEdit | None = None
+        self._popup = _ContactPopup()
+        self._popup.picked.connect(self._pick_suggestion)
 
         self.setWindowTitle(_TITLES.get(mode, "Mail"))
         self.setMinimumSize(700, 600)
@@ -301,6 +368,11 @@ class ComposeWindow(QDialog):
         setattr(self, attr, txt)
         layout.addWidget(txt, stretch=1)
 
+        # Wire autocomplete on recipient fields (not subject)
+        if attr in ("_txt_to", "_txt_cc", "_txt_bcc"):
+            txt.textChanged.connect(lambda text, f=txt: self._on_recipient_changed(f, text))
+            txt.installEventFilter(self)
+
         return {"widget": widget, "inner_layout": layout}
 
     @staticmethod
@@ -310,6 +382,75 @@ class ComposeWindow(QDialog):
         sep.setFixedHeight(1)
         sep.setContentsMargins(18, 0, 18, 0)
         return sep
+
+    # ------------------------------------------------------------------
+    # Autocomplete
+    # ------------------------------------------------------------------
+
+    def _on_recipient_changed(self, field: QLineEdit, text: str) -> None:
+        if not self._contacts:
+            return
+        cursor = field.cursorPosition()
+        token = text[:cursor].rsplit(',', 1)[-1].rsplit(';', 1)[-1].strip()
+        if len(token) < 2:
+            self._popup.hide()
+            return
+        token_lower = token.lower()
+        matches = [
+            u for u in self._contacts
+            if token_lower in u.display_name.lower() or token_lower in u.email.lower()
+        ]
+        if matches:
+            self._active_field = field
+            self._popup.show_for(matches, field)
+        else:
+            self._popup.hide()
+
+    def _pick_suggestion(self, display_name: str, email: str) -> None:
+        field = self._active_field
+        if field is None:
+            return
+        text   = field.text()
+        cursor = field.cursorPosition()
+        before = text[:cursor]
+        after  = text[cursor:]
+        last_sep = max(before.rfind(','), before.rfind(';'))
+        prefix = (text[:last_sep + 1].rstrip() + ' ') if last_sep >= 0 else ''
+        suffix = after.lstrip(', \t')
+        chosen = f"{display_name} <{email}>"
+        new_text = f"{prefix}{chosen}, {suffix}".rstrip()
+        if not new_text.endswith(','):
+            new_text += ', '
+        field.blockSignals(True)
+        field.setText(new_text)
+        field.setCursorPosition(len(new_text))
+        field.blockSignals(False)
+        field.setFocus()
+
+    def eventFilter(self, obj, event) -> bool:
+        if event.type() == QEvent.Type.KeyPress and self._popup.isVisible():
+            key = event.key()
+            if key == Qt.Key.Key_Down:
+                self._popup.select_next()
+                return True
+            if key == Qt.Key.Key_Up:
+                self._popup.select_prev()
+                return True
+            if key in (Qt.Key.Key_Return, Qt.Key.Key_Enter, Qt.Key.Key_Tab):
+                if self._popup.accept_current():
+                    return True
+            if key == Qt.Key.Key_Escape:
+                self._popup.hide()
+                return True
+        return super().eventFilter(obj, event)
+
+    def closeEvent(self, event) -> None:
+        self._popup.hide()
+        super().closeEvent(event)
+
+    def reject(self) -> None:
+        self._popup.hide()
+        super().reject()
 
     def _toggle_cc(self) -> None:
         visible = not self._cc_frame.isVisible()

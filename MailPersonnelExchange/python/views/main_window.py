@@ -211,10 +211,11 @@ _SIDEBAR_SS = """
 class MainWindow(QMainWindow):
     logout_requested = pyqtSignal()
 
-    def __init__(self, ews: EwsService, user_email: str = "") -> None:
+    def __init__(self, ews: EwsService, user_email: str = "", ad_users: list | None = None) -> None:
         super().__init__()
         self._ews              = ews
         self._user_email       = user_email
+        self._ad_users: list   = ad_users or []
         self._current_folder   = "inbox"
         self._all_items:     list[MailItem] = []
         self._visible_items: list[MailItem] = []
@@ -978,7 +979,7 @@ class MainWindow(QMainWindow):
         if mode != "new" and mail is None:
             QMessageBox.information(self, "Action", "Sélectionnez d'abord un message.")
             return
-        ComposeWindow(self._ews, mode=mode, mail=mail, parent=self).exec()
+        ComposeWindow(self._ews, mode=mode, mail=mail, contacts=self._ad_users, parent=self).exec()
 
     def _delete_selected(self) -> None:
         selected = self._mail_list.selectionModel().selectedIndexes()

@@ -23,9 +23,9 @@ def main() -> None:
 
     _wins: list[MainWindow] = []
 
-    def on_authenticated(ews: EwsService, email: str) -> None:
+    def on_authenticated(ews: EwsService, email: str, ad_users: list) -> None:
         login.hide()
-        win = MainWindow(ews, email)
+        win = MainWindow(ews, email, ad_users)
         _wins.clear()
         _wins.append(win)
         win.logout_requested.connect(on_logout)
