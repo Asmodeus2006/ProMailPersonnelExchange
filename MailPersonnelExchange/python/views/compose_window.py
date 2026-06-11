@@ -66,9 +66,13 @@ class _ContactPopup(QListWidget):
     picked = pyqtSignal(str, str)  # display_name, email
 
     def __init__(self) -> None:
-        super().__init__(None, Qt.WindowType.Tool | Qt.WindowType.FramelessWindowHint)
+        super().__init__(None)
+        self.setWindowFlags(
+            Qt.WindowType.Tool
+            | Qt.WindowType.FramelessWindowHint
+            | Qt.WindowType.WindowStaysOnTopHint
+        )
         self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
-        self.setWindowFlag(Qt.WindowType.WindowStaysOnTopHint)
         self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.setStyleSheet(
             "QListWidget{"

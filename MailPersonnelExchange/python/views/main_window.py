@@ -288,6 +288,10 @@ class MainWindow(QMainWindow):
     @pyqtSlot(str, str)
     def _on_update_found(self, version: str, url: str) -> None:
         self._lbl_update.setText(f"✨  Mise à jour disponible — v{version}")
+        try:
+            self._btn_do_update.clicked.disconnect()
+        except RuntimeError:
+            pass
         self._btn_do_update.clicked.connect(lambda: self._download_update(url))
         self._update_banner.show()
 
@@ -930,6 +934,10 @@ class MainWindow(QMainWindow):
 
     def _on_body_loaded(self, mail: MailItem) -> None:
         self._current_full_mail = mail
+        if mail.is_unread:
+            list_item = next((m for m in self._visible_items if m.item_id == mail.item_id), None)
+            if list_item:
+                self._mark_read(list_item, True)
         self._lbl_subject.setText(mail.subject_display)
 
         letter = (mail.sender_display[0] if mail.sender_display else "?").upper()
